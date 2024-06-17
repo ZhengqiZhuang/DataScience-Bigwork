@@ -1,0 +1,744 @@
+<html>
+<head>
+<title>test_for_best.ipynb</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #7a7e85;}
+.s1 { color: #bcbec4;}
+.s2 { color: #cf8e6d;}
+.s3 { color: #bcbec4;}
+.s4 { color: #6aab73;}
+.s5 { color: #2aacb8;}
+</style>
+</head>
+<body bgcolor="#1e1f22">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+test_for_best.ipynb</font>
+</center></td></tr></table>
+<pre><span class="s0">#%% md 
+</span><span class="s1">## 泰坦尼克 数据科学导论大作业 
+</span><span class="s0">#%% 
+# 处理警告信息</span>
+<span class="s2">import </span><span class="s1">warnings</span>
+<span class="s1">warnings</span><span class="s3">.</span><span class="s1">filterwarnings</span><span class="s3">(</span><span class="s4">&quot;ignore&quot;</span><span class="s3">, </span><span class="s1">message </span><span class="s3">= </span><span class="s4">&quot;numpy.dtype size changed&quot;</span><span class="s3">)</span>
+<span class="s0"># 导入文件库</span>
+<span class="s2">import </span><span class="s1">pandas </span><span class="s2">as </span><span class="s1">pd </span>
+<span class="s2">import </span><span class="s1">numpy </span><span class="s2">as </span><span class="s1">np </span>
+<span class="s2">from </span><span class="s1">pandas </span><span class="s2">import </span><span class="s1">Series</span><span class="s3">, </span><span class="s1">DataFrame</span>
+
+<span class="s1">data_train </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">&quot;train.csv&quot;</span><span class="s3">)</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">columns </span><span class="s0"># 获得一个包含数据集中所有列标签的列表，并查看数据集的列名</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">columns </span><span class="s0"># 获得一个包含数据集中所有列标签的列表，并查看数据集的列名</span>
+<span class="s0">#%% 
+</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">info</span><span class="s3">()</span>
+<span class="s0"># 获取数据集 data_train 的详细信息</span>
+<span class="s0"># 了解数据集的关键信息，包括列数、列名、每列非空值的数量，以及每列的数据类型</span>
+<span class="s0">#%% md 
+</span><span class="s1">1.2 数据基本情况：训练数据中总共有891名乘客，但有些属性的数据不全。 
+比如：Age（年龄）属性只有714名乘客有记录；Cabin（客舱）仅有204名乘客是已知的； 
+总共有5个object类的字段需要进行处理   
+</span><span class="s0">#%% 
+</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">describe</span><span class="s3">()</span>
+<span class="s0"># 生成数据集 data_train 的基本统计描述</span>
+<span class="s0"># 计算并返回数据集中每个数值列的统计信息，包括计数、平均值、标准差、最小值、25% 分位数、50% 分位数（中位数）、75% 分位数和最大值</span>
+<span class="s0">#%% md 
+</span><span class="s1">1. Survived字段中大概有0.383838的人最后获救了；   
+2. 2和3等舱的人数比1等舱要多；   
+3. 有数据,已知年龄的乘客，平均年龄大概是29.7岁。   
+</span><span class="s0">#%% md 
+</span><span class="s1">第2步：分析数据之间的关系 
+</span><span class="s0">#%% 
+</span><span class="s2">import </span><span class="s1">matplotlib</span><span class="s3">.</span><span class="s1">pyplot </span><span class="s2">as </span><span class="s1">plt</span>
+
+<span class="s0"># 中文支持，字体使用了仿宋</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">rcParams</span><span class="s3">[</span><span class="s4">'font.sans-serif'</span><span class="s3">] = [</span><span class="s4">'Songti SC'</span><span class="s3">]</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">rcParams</span><span class="s3">[</span><span class="s4">'axes.unicode_minus'</span><span class="s3">] = </span><span class="s2">False</span>
+
+<span class="s1">fig </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">()</span>
+<span class="s1">fig</span><span class="s3">.</span><span class="s1">set</span><span class="s3">(</span><span class="s1">alpha</span><span class="s3">=</span><span class="s5">0.2</span><span class="s3">)  </span><span class="s0"># 设定图表颜色alpha参数</span>
+
+<span class="s0"># 第一个子图：获救人数分布</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot2grid</span><span class="s3">((</span><span class="s5">2</span><span class="s3">,</span><span class="s5">3</span><span class="s3">),(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">0</span><span class="s3">))             </span><span class="s0"># 在一张大图里分列几个小图</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">.</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)</span><span class="s0"># 绘制存活者与非存活者的柱状图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;获救人数分布&quot;</span><span class="s3">) </span><span class="s0"># 标题</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">)  </span>
+
+<span class="s0"># 第二个子图：乘客等级人数分布</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot2grid</span><span class="s3">((</span><span class="s5">2</span><span class="s3">,</span><span class="s5">3</span><span class="s3">),(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">))</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass</span><span class="s3">.</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">&quot;bar&quot;</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;乘客等级人数分布&quot;</span><span class="s3">)</span>
+
+<span class="s0"># 第三个子图：获救乘客年龄人数分布</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot2grid</span><span class="s3">((</span><span class="s5">2</span><span class="s3">,</span><span class="s5">3</span><span class="s3">),(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">2</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">scatter</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">, </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">,</span><span class="s1">color </span><span class="s3">= </span><span class="s4">'pink'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;年龄&quot;</span><span class="s3">)                         </span><span class="s0"># y轴标签</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">grid</span><span class="s3">(</span><span class="s1">which</span><span class="s3">=</span><span class="s4">'major'</span><span class="s3">, </span><span class="s1">axis</span><span class="s3">=</span><span class="s4">'y'</span><span class="s3">) </span><span class="s0"># 格式化图表的网格线样式</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;获救乘客年龄人数分布&quot;</span><span class="s3">)</span>
+
+<span class="s0"># 第四个子图：不同乘客等级年龄分布</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot2grid</span><span class="s3">((</span><span class="s5">2</span><span class="s3">,</span><span class="s5">3</span><span class="s3">),(</span><span class="s5">1</span><span class="s3">,</span><span class="s5">0</span><span class="s3">), </span><span class="s1">colspan</span><span class="s3">=</span><span class="s5">2</span><span class="s3">)</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass </span><span class="s3">== </span><span class="s5">1</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)   </span><span class="s0"># 绘制1等舱乘客年龄的密度</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass </span><span class="s3">== </span><span class="s5">2</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'orange'</span><span class="s3">)</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass </span><span class="s3">== </span><span class="s5">3</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'green'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u&quot;年龄&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;密度&quot;</span><span class="s3">) </span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同乘客等级年龄分布&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">((</span><span class="s4">u'1等舱'</span><span class="s3">, </span><span class="s4">u'2等舱'</span><span class="s3">,</span><span class="s4">u'3等舱'</span><span class="s3">),</span><span class="s1">loc</span><span class="s3">=</span><span class="s4">'best'</span><span class="s3">) </span><span class="s0"># 图表设置图例</span>
+
+<span class="s0"># 第五个子图：不同登船口乘客人数分布</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot2grid</span><span class="s3">((</span><span class="s5">2</span><span class="s3">,</span><span class="s5">3</span><span class="s3">),(</span><span class="s5">1</span><span class="s3">,</span><span class="s5">2</span><span class="s3">))</span>
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">Embarked</span><span class="s3">.</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">,</span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同登船口乘客人数分布&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">)  </span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplots_adjust</span><span class="s3">(</span><span class="s1">hspace</span><span class="s3">=</span><span class="s5">0.5</span><span class="s3">, </span><span class="s1">wspace</span><span class="s3">=</span><span class="s5">0.5</span><span class="s3">) </span><span class="s0"># 调整图之间的间距</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% md 
+</span><span class="s1">1. 被救的人300多个，不到总人数的一半；   
+2. 3等舱获救的乘客最多，其次是1、2等舱；   
+3. 遇难和获救的人年龄跨度都很广；   
+4. 3个舱的年龄总体趋势差不多，2和3等舱乘客20-25岁的最多，1等舱35-40岁的最多；   
+5. 登船港口人数按照S、C、Q递减，而且S港口的人数远高于另外两个港口的人数。   
+</span><span class="s0">#%% 
+# 不同乘客等级分布</span>
+<span class="s1">fig </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">()</span>
+<span class="s1">fig</span><span class="s3">.</span><span class="s1">set</span><span class="s3">(</span><span class="s1">alpha</span><span class="s3">=</span><span class="s5">0.2</span><span class="s3">)  </span><span class="s0"># 设定图表颜色alpha参数</span>
+
+<span class="s0"># 统计不同乘客等级的获救和未获救人数</span>
+<span class="s1">Survived_0 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived </span><span class="s3">== </span><span class="s5">0</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+<span class="s1">Survived_1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived </span><span class="s3">== </span><span class="s5">1</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+
+<span class="s0"># 创建一个DataFrame来存储数据</span>
+<span class="s1">df</span><span class="s3">=</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">u'获救'</span><span class="s3">:</span><span class="s1">Survived_1</span><span class="s3">, </span><span class="s4">u'没有获救'</span><span class="s3">:</span><span class="s1">Survived_0</span><span class="s3">})</span>
+
+<span class="s0"># 绘制堆叠柱状图</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">, </span><span class="s1">stacked</span><span class="s3">=</span><span class="s2">True</span><span class="s3">,</span><span class="s1">color </span><span class="s3">= [</span><span class="s4">'violet'</span><span class="s3">,</span><span class="s4">'darkorchid'</span><span class="s3">])</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同乘客等级分布&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u&quot;乘客等级&quot;</span><span class="s3">) </span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">) </span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+# 不同登录港口的乘客分布</span>
+<span class="s1">fig </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">()</span>
+<span class="s1">fig</span><span class="s3">.</span><span class="s1">set</span><span class="s3">(</span><span class="s1">alpha</span><span class="s3">=</span><span class="s5">0.2</span><span class="s3">)  </span><span class="s0"># 设定图表颜色alpha参数</span>
+
+<span class="s0"># 统计不同登录港口的获救和未获救人数</span>
+<span class="s1">Survived_0 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Embarked</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived </span><span class="s3">== </span><span class="s5">0</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+<span class="s1">Survived_1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Embarked</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived </span><span class="s3">== </span><span class="s5">1</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+
+<span class="s0"># 创建一个DataFrame来存储数据</span>
+<span class="s1">df</span><span class="s3">=</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">u'获救'</span><span class="s3">:</span><span class="s1">Survived_1</span><span class="s3">, </span><span class="s4">u'没有获救'</span><span class="s3">:</span><span class="s1">Survived_0</span><span class="s3">})</span>
+
+<span class="s0"># 绘制堆叠柱状图</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">, </span><span class="s1">stacked</span><span class="s3">=</span><span class="s2">True</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'violet'</span><span class="s3">,</span><span class="s4">'darkorchid'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同登录港口的乘客分布&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u&quot;登录港口&quot;</span><span class="s3">) </span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">) </span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+# 不同性别的乘客的分布</span>
+<span class="s1">fig </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">figure</span><span class="s3">()</span>
+<span class="s1">fig</span><span class="s3">.</span><span class="s1">set</span><span class="s3">(</span><span class="s1">alpha</span><span class="s3">=</span><span class="s5">0.2</span><span class="s3">)  </span><span class="s0"># 设定图表颜色alpha参数</span>
+
+<span class="s0"># 统计不同性别的获救和未获救人数</span>
+<span class="s1">Survived_m </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Sex </span><span class="s3">== </span><span class="s4">'male'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+<span class="s1">Survived_f </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Sex </span><span class="s3">== </span><span class="s4">'female'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">()</span>
+
+<span class="s0"># 创建一个DataFrame来存储数据</span>
+<span class="s1">df</span><span class="s3">=</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">u'男'</span><span class="s3">:</span><span class="s1">Survived_m</span><span class="s3">, </span><span class="s4">u'女'</span><span class="s3">:</span><span class="s1">Survived_f</span><span class="s3">})</span>
+
+<span class="s0"># 绘制堆叠柱状图</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">, </span><span class="s1">stacked</span><span class="s3">=</span><span class="s2">True</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'violet'</span><span class="s3">,</span><span class="s4">'darkorchid'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同性别的乘客的分布&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u&quot;性别&quot;</span><span class="s3">) </span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+# 根据各乘客等级和性别的乘客分布</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Sex  </span><span class="s0"># 乘客的性别数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass  </span><span class="s0"># 乘客的等级数据</span>
+<span class="s1">S3 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived  </span><span class="s0"># 乘客的获救情况数据</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">141</span><span class="s3">)  </span><span class="s0"># 创建第一个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">], </span><span class="s1">S3</span><span class="s3">[</span><span class="s1">S1</span><span class="s3">==</span><span class="s4">'female'</span><span class="s3">][</span><span class="s1">S2</span><span class="s3">!=</span><span class="s5">3</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">(), </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'slateblue'</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">.5</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">],[</span><span class="s4">u'获救'</span><span class="s3">,</span><span class="s4">u'没有获救'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([-</span><span class="s5">.5</span><span class="s3">,</span><span class="s5">1.5</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">350</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">([</span><span class="s4">u&quot;女/12级舱&quot;</span><span class="s3">], </span><span class="s1">loc</span><span class="s3">=</span><span class="s4">'best'</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">142</span><span class="s3">)  </span><span class="s0"># 创建第二个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">], </span><span class="s1">S3</span><span class="s3">[</span><span class="s1">S1</span><span class="s3">==</span><span class="s4">'female'</span><span class="s3">][</span><span class="s1">S2</span><span class="s3">==</span><span class="s5">3</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">(), </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'indigo'</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">.5</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">],[</span><span class="s4">u'获救'</span><span class="s3">,</span><span class="s4">u'没有获救'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([-</span><span class="s5">.5</span><span class="s3">,</span><span class="s5">1.5</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">350</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">([</span><span class="s4">u&quot;女/3级舱&quot;</span><span class="s3">], </span><span class="s1">loc</span><span class="s3">=</span><span class="s4">'best'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;不同乘客等级和性别的的乘客分布&quot;</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">143</span><span class="s3">)  </span><span class="s0"># 创建第三个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">], </span><span class="s1">S3</span><span class="s3">[</span><span class="s1">S1</span><span class="s3">==</span><span class="s4">'male'</span><span class="s3">][</span><span class="s1">S2</span><span class="s3">!=</span><span class="s5">3</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">(), </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'mediumorchid'</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">.5</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">1</span><span class="s3">],[</span><span class="s4">u'获救'</span><span class="s3">,</span><span class="s4">u'没有获救'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([-</span><span class="s5">.5</span><span class="s3">,</span><span class="s5">1.5</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">350</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">([</span><span class="s4">u&quot;男/12级舱&quot;</span><span class="s3">], </span><span class="s1">loc</span><span class="s3">=</span><span class="s4">'best'</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">144</span><span class="s3">)  </span><span class="s0"># 创建第四个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">1</span><span class="s3">,</span><span class="s5">0</span><span class="s3">], </span><span class="s1">S3</span><span class="s3">[</span><span class="s1">S1</span><span class="s3">==</span><span class="s4">'male'</span><span class="s3">][</span><span class="s1">S2</span><span class="s3">==</span><span class="s5">3</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">(), </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'deeppink'</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">.5</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">1</span><span class="s3">,</span><span class="s5">0</span><span class="s3">],[</span><span class="s4">u'没有获救'</span><span class="s3">,</span><span class="s4">u'获救'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([-</span><span class="s5">.5</span><span class="s3">,</span><span class="s5">1.5</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">350</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">([</span><span class="s4">u&quot;男/3级舱&quot;</span><span class="s3">], </span><span class="s1">loc</span><span class="s3">=</span><span class="s4">'best'</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% md 
+</span><span class="s1">1. 从各乘客等级的获救情况来看：头等舱和2等舱乘客的幸存概率相对高一些，可以作为特征看看；   
+2. 从各登录港口的获救情况来看：S港口人数最多，Q港口人数最少，但生存率都在三分之一左右，C港口的获救人数过半，需要进一步验证，受什么因素影响。性别还是船舱等级？   
+3. 从性别来看获救情况：女性获救的概率显然高于男性，因此可作为重要特征；   
+4. 从各乘客等级和性别的获救情况来看： 高级船舱对生存率的影响要比性别的略高。   
+ 
+不同港口的船舱等级、性别情况；不同港口的年龄分布；船票费用和生存的关系；兄妹&amp;配偶数和生存的关系   
+</span><span class="s0">#%% 
+# 不同登船口、船舱等级、性别的乘客分布</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Embarked  </span><span class="s0"># 乘客的登船口数据</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass  </span><span class="s0"># 乘客的船舱等级数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Sex  </span><span class="s0"># 乘客的性别数据</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">131</span><span class="s3">)  </span><span class="s0"># 创建第一个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u'S'</span><span class="s3">)  </span><span class="s0"># 设置子图标题为'S'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0.5</span><span class="s3">,</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">0.7</span><span class="s3">], </span><span class="s1">S1</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'S'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'lightgreen'</span><span class="s3">,</span><span class="s4">'darkgreen'</span><span class="s3">,</span><span class="s4">'turquoise'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">1.5</span><span class="s3">,</span><span class="s5">1.6</span><span class="s3">], </span><span class="s1">S2</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'S'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'deepskyblue'</span><span class="s3">,</span><span class="s4">'slateblue'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">2</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">1.55</span><span class="s3">], [</span><span class="s4">u'船舱等级'</span><span class="s3">,</span><span class="s4">u'性别'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">500</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'人数'</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">132</span><span class="s3">)  </span><span class="s0"># 创建第二个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u'C'</span><span class="s3">)  </span><span class="s0"># 设置子图标题为'C'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0.5</span><span class="s3">,</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">0.7</span><span class="s3">], </span><span class="s1">S1</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'C'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'lightgreen'</span><span class="s3">,</span><span class="s4">'darkgreen'</span><span class="s3">,</span><span class="s4">'turquoise'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">1.5</span><span class="s3">,</span><span class="s5">1.6</span><span class="s3">], </span><span class="s1">S2</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'C'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'deepskyblue'</span><span class="s3">,</span><span class="s4">'slateblue'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">2</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">1.55</span><span class="s3">], [</span><span class="s4">u'船舱等级'</span><span class="s3">,</span><span class="s4">u'性别'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">500</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'人数'</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">subplot</span><span class="s3">(</span><span class="s5">133</span><span class="s3">)  </span><span class="s0"># 创建第三个子图</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u'Q'</span><span class="s3">)  </span><span class="s0"># 设置子图标题为'Q'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">0.5</span><span class="s3">,</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">0.7</span><span class="s3">], </span><span class="s1">S1</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'Q'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'lightgreen'</span><span class="s3">,</span><span class="s4">'darkgreen'</span><span class="s3">,</span><span class="s4">'turquoise'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">([</span><span class="s5">1.5</span><span class="s3">,</span><span class="s5">1.6</span><span class="s3">], </span><span class="s1">S2</span><span class="s3">[</span><span class="s1">S</span><span class="s3">==</span><span class="s4">'Q'</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">(), </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'deepskyblue'</span><span class="s3">,</span><span class="s4">'slateblue'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([</span><span class="s5">0</span><span class="s3">,</span><span class="s5">2</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">([</span><span class="s5">0.6</span><span class="s3">,</span><span class="s5">1.55</span><span class="s3">], [</span><span class="s4">u'船舱等级'</span><span class="s3">,</span><span class="s4">u'性别'</span><span class="s3">])</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">,</span><span class="s5">500</span><span class="s3">,</span><span class="s5">100</span><span class="s3">))</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'人数'</span><span class="s3">)</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">&quot;不同登船口、船舱等级、性别的乘客分布&quot;</span><span class="s3">)</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()</span>
+<span class="s0">#%% 
+# 不同等级船舱的乘客年龄分布</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age  </span><span class="s0"># 乘客的年龄数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Embarked  </span><span class="s0"># 乘客的登船口数据</span>
+
+<span class="s1">S1</span><span class="s3">[</span><span class="s1">S2</span><span class="s3">==</span><span class="s4">'S'</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">, </span><span class="s1">label</span><span class="s3">=</span><span class="s4">'S'</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'royalblue'</span><span class="s3">)  </span><span class="s0"># 在登船口为'S'的乘客中绘制年龄的核密度估计曲线，标签为'S'，颜色为'royalblue'</span>
+<span class="s1">S1</span><span class="s3">[</span><span class="s1">S2</span><span class="s3">==</span><span class="s4">'C'</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">, </span><span class="s1">label</span><span class="s3">=</span><span class="s4">'C'</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'darkorchid'</span><span class="s3">)  </span><span class="s0"># 在登船口为'C'的乘客中绘制年龄的核密度估计曲线，标签为'C'，颜色为'darkorchid'</span>
+<span class="s1">S1</span><span class="s3">[</span><span class="s1">S2</span><span class="s3">==</span><span class="s4">'Q'</span><span class="s3">].</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'kde'</span><span class="s3">, </span><span class="s1">label</span><span class="s3">=</span><span class="s4">'Q'</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'orangered'</span><span class="s3">)  </span><span class="s0"># 在登船口为'Q'的乘客中绘制年龄的核密度估计曲线，标签为'Q'，颜色为'orangered'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">'年龄'</span><span class="s3">, </span><span class="s1">size</span><span class="s3">=</span><span class="s5">14</span><span class="s3">)  </span><span class="s0"># 设置x轴标签为'年龄'，字体大小为14</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">''</span><span class="s3">)  </span><span class="s0"># 设置y轴标签为空</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">legend</span><span class="s3">()  </span><span class="s0"># 显示图例</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">'不同等级船舱的乘客年龄分布'</span><span class="s3">, </span><span class="s1">size</span><span class="s3">=</span><span class="s5">14</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'不同等级船舱的乘客年龄分布'，字体大小为14</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 船票和获救的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">sort_values</span><span class="s3">(</span><span class="s4">'Fare'</span><span class="s3">)  </span><span class="s0"># 按照船票价格对数据进行排序，将结果存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Survived  </span><span class="s0"># 乘客的获救情况数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Fare  </span><span class="s0"># 乘客的船票价格数据</span>
+
+<span class="s1">S1</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">S1 </span><span class="s3">== </span><span class="s5">0</span><span class="s3">] = -</span><span class="s5">1  </span><span class="s0"># 将获救情况为0的乘客的标签改为-1</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">scatter</span><span class="s3">(</span><span class="s1">S2</span><span class="s3">, </span><span class="s1">S1</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)  </span><span class="s0"># 绘制船票价格和获救情况的散点图，散点颜色为'pink'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlim</span><span class="s3">([-</span><span class="s5">5</span><span class="s3">, </span><span class="s5">513</span><span class="s3">])  </span><span class="s0"># 设置x轴范围</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">yticks</span><span class="s3">([-</span><span class="s5">1</span><span class="s3">, </span><span class="s5">1</span><span class="s3">])  </span><span class="s0"># 设置y轴刻度为-1和1</span>
+<span class="s1">ax </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">gca</span><span class="s3">()  </span><span class="s0"># 获取当前的Axes对象</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'bottom'</span><span class="s3">].</span><span class="s1">set_position</span><span class="s3">((</span><span class="s4">'data'</span><span class="s3">, </span><span class="s5">0</span><span class="s3">))  </span><span class="s0"># 设置x轴的位置在y=0的位置</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'top'</span><span class="s3">].</span><span class="s1">set_color</span><span class="s3">(</span><span class="s4">'none'</span><span class="s3">)  </span><span class="s0"># 隐藏顶部的边框线</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">&quot;船票和获救的联系&quot;</span><span class="s3">)  </span><span class="s0"># 设置图表标题为&quot;船票和获救的联系&quot;</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 家庭关系和获救的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train  </span><span class="s0"># 使用原始数据集，并将其存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Survived  </span><span class="s0"># 乘客的获救情况数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">SibSp</span><span class="s3">[</span><span class="s1">S1 </span><span class="s3">== </span><span class="s5">1</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">()  </span><span class="s0"># 获救的乘客中不同家庭关系数量的统计结果</span>
+<span class="s1">S3 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">SibSp</span><span class="s3">[</span><span class="s1">S1 </span><span class="s3">== </span><span class="s5">0</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">()  </span><span class="s0"># 未获救的乘客中不同家庭关系数量的统计结果</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">(</span><span class="s1">S2</span><span class="s3">.</span><span class="s1">index</span><span class="s3">, </span><span class="s1">S2</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.4</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'violet'</span><span class="s3">)  </span><span class="s0"># 绘制获救的乘客中不同家庭关系数量的柱状图，柱状的颜色为'violet'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">(</span><span class="s1">S3</span><span class="s3">.</span><span class="s1">index</span><span class="s3">, -</span><span class="s1">S3</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.4</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'darkorchid'</span><span class="s3">)  </span><span class="s0"># 绘制未获救的乘客中不同家庭关系数量的柱状图，柱状的颜色为'darkorchid'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">, </span><span class="s5">9</span><span class="s3">))  </span><span class="s0"># 设置x轴刻度为0到8</span>
+<span class="s1">ax </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">gca</span><span class="s3">()  </span><span class="s0"># 获取当前的Axes对象</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'bottom'</span><span class="s3">].</span><span class="s1">set_position</span><span class="s3">((</span><span class="s4">'data'</span><span class="s3">, </span><span class="s5">0</span><span class="s3">))  </span><span class="s0"># 设置x轴的位置在y=0的位置</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'top'</span><span class="s3">].</span><span class="s1">set_color</span><span class="s3">(</span><span class="s4">'none'</span><span class="s3">)  </span><span class="s0"># 隐藏顶部的边框线</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">'家庭关系和获救的联系'</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'家庭关系和获救的联系'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 子女父母数和获救的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train  </span><span class="s0"># 使用原始数据集，并将其存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Survived  </span><span class="s0"># 乘客的获救情况数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Parch</span><span class="s3">[</span><span class="s1">S1 </span><span class="s3">== </span><span class="s5">1</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">()  </span><span class="s0"># 获救的乘客中不同子女父母数数量的统计结果</span>
+<span class="s1">S3 </span><span class="s3">= </span><span class="s1">S</span><span class="s3">.</span><span class="s1">Parch</span><span class="s3">[</span><span class="s1">S1 </span><span class="s3">== </span><span class="s5">0</span><span class="s3">].</span><span class="s1">value_counts</span><span class="s3">().</span><span class="s1">sort_index</span><span class="s3">()  </span><span class="s0"># 未获救的乘客中不同子女父母数数量的统计结果</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">(</span><span class="s1">S2</span><span class="s3">.</span><span class="s1">index</span><span class="s3">, </span><span class="s1">S2</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.4</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'violet'</span><span class="s3">])  </span><span class="s0"># 绘制获救的乘客中不同子女父母数数量的柱状图，柱状的宽度为0.4，颜色为'violet'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">bar</span><span class="s3">(</span><span class="s1">S3</span><span class="s3">.</span><span class="s1">index</span><span class="s3">, -</span><span class="s1">S3</span><span class="s3">, </span><span class="s1">width</span><span class="s3">=</span><span class="s5">0.4</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'darkorchid'</span><span class="s3">])  </span><span class="s0"># 绘制未获救的乘客中不同子女父母数数量的柱状图，柱状的宽度为0.4，颜色为'darkorchid'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">(</span><span class="s1">range</span><span class="s3">(</span><span class="s5">0</span><span class="s3">, </span><span class="s5">9</span><span class="s3">))  </span><span class="s0"># 设置x轴刻度为0到8</span>
+<span class="s1">ax </span><span class="s3">= </span><span class="s1">plt</span><span class="s3">.</span><span class="s1">gca</span><span class="s3">()  </span><span class="s0"># 获取当前的Axes对象</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'bottom'</span><span class="s3">].</span><span class="s1">set_position</span><span class="s3">((</span><span class="s4">'data'</span><span class="s3">, </span><span class="s5">0</span><span class="s3">))  </span><span class="s0"># 设置x轴的位置在y=0的位置</span>
+<span class="s1">ax</span><span class="s3">.</span><span class="s1">spines</span><span class="s3">[</span><span class="s4">'top'</span><span class="s3">].</span><span class="s1">set_color</span><span class="s3">(</span><span class="s4">'none'</span><span class="s3">)  </span><span class="s0"># 隐藏顶部的边框线</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">'子女父母数和获救的联系'</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'子女父母数和获救的联系'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# Cabin与获救的联系</span>
+<span class="s1">Survived_cabin </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">[</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">notnull</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">)].</span><span class="s1">value_counts</span><span class="s3">()  </span><span class="s0"># 存储有Cabin信息的乘客的获救情况统计结果</span>
+<span class="s1">Survived_nocabin </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Survived</span><span class="s3">[</span><span class="s1">pd</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">)].</span><span class="s1">value_counts</span><span class="s3">()  </span><span class="s0"># 存储没有Cabin信息的乘客的获救情况统计结果</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">u'有'</span><span class="s3">: </span><span class="s1">Survived_cabin</span><span class="s3">, </span><span class="s4">u'无'</span><span class="s3">: </span><span class="s1">Survived_nocabin</span><span class="s3">}).</span><span class="s1">transpose</span><span class="s3">()  </span><span class="s0"># 创建一个DataFrame，包含有Cabin和无Cabin的获救情况统计结果</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">plot</span><span class="s3">(</span><span class="s1">kind</span><span class="s3">=</span><span class="s4">'bar'</span><span class="s3">, </span><span class="s1">stacked</span><span class="s3">=</span><span class="s2">True</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=[</span><span class="s4">'violet'</span><span class="s3">, </span><span class="s4">'darkorchid'</span><span class="s3">])  </span><span class="s0"># 绘制堆叠柱状图，表示有Cabin和无Cabin的乘客的获救情况</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;Cabin与获救的联系&quot;</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'Cabin与获救的联系'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xticks</span><span class="s3">(</span><span class="s1">rotation</span><span class="s3">=</span><span class="s5">0</span><span class="s3">)  </span><span class="s0"># x轴刻度不旋转</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u&quot;Cabin有无&quot;</span><span class="s3">)  </span><span class="s0"># 设置x轴标签为'Cabin有无'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u&quot;人数&quot;</span><span class="s3">)  </span><span class="s0"># 设置y轴标签为'人数'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 年龄和船票的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">sort_values</span><span class="s3">(</span><span class="s4">'Age'</span><span class="s3">)  </span><span class="s0"># 按照年龄对数据集进行排序，存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age  </span><span class="s0"># 年龄数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Fare  </span><span class="s0"># 船票费用数据</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">scatter</span><span class="s3">(</span><span class="s1">S1</span><span class="s3">, </span><span class="s1">S2</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)  </span><span class="s0"># 绘制散点图，横轴为年龄，纵轴为船票费用，点的颜色为'pink'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u'年龄'</span><span class="s3">)  </span><span class="s0"># 设置x轴标签为'年龄'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'费用'</span><span class="s3">)  </span><span class="s0"># 设置y轴标签为'费用'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">u&quot;年龄和船票的联系&quot;</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'年龄和船票的联系'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylim</span><span class="s3">(-</span><span class="s5">1</span><span class="s3">, </span><span class="s5">550</span><span class="s3">)  </span><span class="s0"># 设置y轴的取值范围为-1到550</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 年龄和SibSp的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">sort_values</span><span class="s3">(</span><span class="s4">'Age'</span><span class="s3">)  </span><span class="s0"># 按照年龄对数据集进行排序，存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age  </span><span class="s0"># 年龄数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">SibSp  </span><span class="s0"># SibSp数据</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">scatter</span><span class="s3">(</span><span class="s1">S1</span><span class="s3">, </span><span class="s1">S2</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)  </span><span class="s0"># 绘制散点图，横轴为年龄，纵轴为SibSp，点的颜色为'pink'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u'年龄'</span><span class="s3">)  </span><span class="s0"># 设置x轴标签为'年龄'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'SibSp'</span><span class="s3">)  </span><span class="s0"># 设置y轴标签为'SibSp'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">&quot;年龄和SibSp的联系&quot;</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'年龄和SibSp的联系'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+# 年龄和Parch的联系</span>
+<span class="s1">S </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">sort_values</span><span class="s3">(</span><span class="s4">'Age'</span><span class="s3">)  </span><span class="s0"># 按照年龄对数据集进行排序，存储在变量S中</span>
+<span class="s1">S1 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Age  </span><span class="s0"># 年龄数据</span>
+<span class="s1">S2 </span><span class="s3">= </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Parch  </span><span class="s0"># Parch数据</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">scatter</span><span class="s3">(</span><span class="s1">S1</span><span class="s3">, </span><span class="s1">S2</span><span class="s3">, </span><span class="s1">color</span><span class="s3">=</span><span class="s4">'pink'</span><span class="s3">)  </span><span class="s0"># 绘制散点图，横轴为年龄，纵轴为Parch，点的颜色为'pink'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">xlabel</span><span class="s3">(</span><span class="s4">u'年龄'</span><span class="s3">)  </span><span class="s0"># 设置x轴标签为'年龄'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">ylabel</span><span class="s3">(</span><span class="s4">u'Parch'</span><span class="s3">)  </span><span class="s0"># 设置y轴标签为'Parch'</span>
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">title</span><span class="s3">(</span><span class="s4">&quot;年龄和Parch的联系&quot;</span><span class="s3">)  </span><span class="s0"># 设置图表标题为'年龄和Parch的联系'</span>
+
+<span class="s1">plt</span><span class="s3">.</span><span class="s1">show</span><span class="s3">()  </span><span class="s0"># 显示图表</span>
+<span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">ensemble </span><span class="s2">import </span><span class="s1">RandomForestRegressor</span>
+
+<span class="s2">def </span><span class="s1">set_missing_ages</span><span class="s3">(</span><span class="s1">df</span><span class="s3">):</span>
+    
+    <span class="s0"># 把选定特征取出来丢进Random Forest Regressor中</span>
+    <span class="s1">age_df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">,</span><span class="s4">'Fare'</span><span class="s3">, </span><span class="s4">'Parch'</span><span class="s3">, </span><span class="s4">'SibSp'</span><span class="s3">, </span><span class="s4">'Pclass'</span><span class="s3">]]</span>
+    
+    <span class="s0"># 乘客分成已知年龄和未知年龄两部分</span>
+    <span class="s1">known_age </span><span class="s3">= </span><span class="s1">age_df</span><span class="s3">[</span><span class="s1">age_df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">notnull</span><span class="s3">()].</span><span class="s1">values</span>
+   <span class="s0"># print(known_age)</span>
+    <span class="s1">unknown_age </span><span class="s3">= </span><span class="s1">age_df</span><span class="s3">[</span><span class="s1">age_df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()].</span><span class="s1">values</span>
+    
+    <span class="s0"># y即目标年龄</span>
+    <span class="s1">y </span><span class="s3">= </span><span class="s1">known_age</span><span class="s3">[:, </span><span class="s5">0</span><span class="s3">]</span>
+   <span class="s0"># print(y)</span>
+    
+    <span class="s0"># X即特征属性值</span>
+    <span class="s1">X </span><span class="s3">= </span><span class="s1">known_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+   <span class="s0"># print(X)</span>
+    
+    <span class="s0"># random_state表示一个种子的值，n_estimators表示子树的值，n_jobs表示最大的处理器，-1表示不限制</span>
+    <span class="s1">rfr </span><span class="s3">= </span><span class="s1">RandomForestRegressor</span><span class="s3">(</span><span class="s1">random_state</span><span class="s3">=</span><span class="s5">0</span><span class="s3">, </span><span class="s1">n_estimators</span><span class="s3">=</span><span class="s5">2000</span><span class="s3">, </span><span class="s1">n_jobs</span><span class="s3">=-</span><span class="s5">1</span><span class="s3">)</span>
+    <span class="s0"># fit到RandomForestRegressor之中</span>
+    <span class="s1">rfr</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">)</span>
+    
+    <span class="s0"># 用得到的模型进行未知年龄结果预测</span>
+    <span class="s1">predictedAges </span><span class="s3">= </span><span class="s1">rfr</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">unknown_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:])</span>
+    
+    <span class="s0"># 用得到的预测结果填补原缺失数据</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Age' </span><span class="s3">] = </span><span class="s1">predictedAges </span>
+    
+    <span class="s2">return </span><span class="s1">df</span><span class="s3">, </span><span class="s1">rfr</span>
+    
+
+<span class="s2">def </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">df</span><span class="s3">):</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">.</span><span class="s1">notnull</span><span class="s3">()), </span><span class="s4">'Cabin' </span><span class="s3">] = </span><span class="s4">&quot;Yes&quot;</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Cabin' </span><span class="s3">] = </span><span class="s4">&quot;No&quot;</span>
+    <span class="s2">return </span><span class="s1">df</span>
+
+<span class="s0"># 缺失值处理</span>
+<span class="s1">data_train</span><span class="s3">, </span><span class="s1">rfr </span><span class="s3">= </span><span class="s1">set_missing_ages</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">)</span>
+<span class="s1">data_train </span><span class="s3">= </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">)</span>
+
+<span class="s1">data_train</span><span class="s3">.</span><span class="s1">info</span><span class="s3">()</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第4步：特征因子化 
+</span><span class="s0">#%% 
+</span><span class="s1">dummies_Cabin </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Cabin'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Cabin'</span><span class="s3">)</span>
+<span class="s1">dummies_Embarked </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Embarked'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Sex'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex'</span><span class="s3">)</span>
+<span class="s1">dummies_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Pclass'</span><span class="s3">)</span>
+<span class="s0"># 对Cabin，Embarked，Sex，Pclass四个分类变量进行了虚拟变量转换，也可以称之为指示变量，并分别指定了不同的前缀</span>
+<span class="s0"># 合成数据集</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">concat</span><span class="s3">([</span><span class="s1">data_train</span><span class="s3">, </span><span class="s1">dummies_Cabin</span><span class="s3">, </span><span class="s1">dummies_Embarked</span><span class="s3">, </span><span class="s1">dummies_Sex</span><span class="s3">, </span><span class="s1">dummies_Pclass</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">)</span>
+<span class="s0"># 删除指定数据集，axis为0(index) or 1(columns),inpalace表示是否对内部操作，如果True则不返回</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">drop</span><span class="s3">([</span><span class="s4">'Pclass'</span><span class="s3">, </span><span class="s4">'Name'</span><span class="s3">, </span><span class="s4">'Sex'</span><span class="s3">, </span><span class="s4">'Ticket'</span><span class="s3">, </span><span class="s4">'Cabin'</span><span class="s3">, </span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">, </span><span class="s1">inplace</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+<span class="s0"># 在DataFrame中删除指定的列，并且在原始数据上进行修改，不返回新的DataFrame</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第5步：处理浮动较大的数值 
+</span><span class="s0">#%% 
+# 处理数据集中浮动较大的数值到(-1,1)之间</span>
+<span class="s2">import </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">preprocessing </span><span class="s2">as </span><span class="s1">preprocessing</span>
+<span class="s1">scaler </span><span class="s3">= </span><span class="s1">preprocessing</span><span class="s3">.</span><span class="s1">StandardScaler</span><span class="s3">()</span>
+<span class="s0"># fit的数据需要以2维([[]])的形式传入</span>
+<span class="s1">age_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]])</span>
+<span class="s0"># scaler对象（一个StandardScaler实例）对df[[‘Age’]]这个DataFrame进行拟合，计算出Age列的均值和标准差，并将这些参数保存在age_scale_param变量中</span>
+<span class="s0"># 将fit的数据处理后的结果以np.array的形式返回</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">] =</span><span class="s1">age_scale_param</span><span class="s3">.</span><span class="s1">transform</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]])</span>
+<span class="s1">fare_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]])</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">] = </span><span class="s1">fare_scale_param</span><span class="s3">.</span><span class="s1">transform</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]])</span>
+<span class="s0"># 对df[[‘Fare’]]这个DataFrame进行拟合，计算出Fare列的均值和标准差，并将这些参数保存在fare_scale_param变量中</span>
+<span class="s0"># 对Age和Fare进行标准化处理，即减去均值，除以标准差，使得每个变量的均值为0，标准差为1</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Age'</span><span class="s3">]=</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">]</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Fare'</span><span class="s3">]=</span><span class="s1">df</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">]</span>
+<span class="s1">df</span>
+<span class="s0"># 最后得到的df数据情况如下所示</span>
+<span class="s0">#df.to_csv('look.csv')</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第6步：筛选数据 
+</span><span class="s0">#%% 
+# 筛选数据(结果+特征)</span>
+<span class="s0"># 利用正则表达式</span>
+<span class="s1">train_df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*'</span><span class="s3">) </span><span class="s0">#表示任意字符重复任意次数</span>
+<span class="s0"># DataFrame进行筛选，参数regex表示要匹配的正则表达式，axis默认为1，表示沿着列的方向进行筛选</span>
+<span class="s0"># train_df.to_csv('look_filter.csv')</span>
+<span class="s1">train_np </span><span class="s3">= </span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">values</span>
+<span class="s0"># 将筛选出的列组成一个新的DataFrame，赋值给train_df变量</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第7步：数据建模 
+</span><span class="s0">#%% 
+# y即Survival结果</span>
+<span class="s1">y </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">0</span><span class="s3">]</span>
+<span class="s0"># 在train_np这个数组中选择第0列的所有元素，赋值给y变量</span>
+<span class="s0"># X即特征属性值</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+<span class="s0"># 从train_np这个数组中选择除了第0列之外的所有列，赋值给X变量</span>
+
+<span class="s2">from </span><span class="s1">sklearn </span><span class="s2">import </span><span class="s1">linear_model</span>
+<span class="s0"># fit到RandomForestRegressor之中</span>
+<span class="s1">clf </span><span class="s3">= </span><span class="s1">linear_model</span><span class="s3">.</span><span class="s1">LogisticRegression</span><span class="s3">(</span><span class="s1">solver</span><span class="s3">=</span><span class="s4">'liblinear'</span><span class="s3">,</span><span class="s1">C</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">penalty</span><span class="s3">=</span><span class="s4">'l1'</span><span class="s3">, </span><span class="s1">tol</span><span class="s3">=</span><span class="s5">1e-6</span><span class="s3">)</span>
+<span class="s0"># 创建一个LogisticRegression的对象，命名为clf，并指定参数</span>
+<span class="s1">clf</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">)</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第8步：测试集预处理 
+</span><span class="s0">#%% 
+# 测试集预处理</span>
+
+<span class="s1">data_test </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">r'test.csv'</span><span class="s3">) </span><span class="s0">#读取文件并将其存储在名为 data_test 的 DataFrame 中</span>
+ 
+<span class="s0"># 缺失值处理</span>
+<span class="s1">data_test</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Fare</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Fare' </span><span class="s3">] = </span><span class="s5">0</span>
+<span class="s1">tmp_df </span><span class="s3">= </span><span class="s1">data_test</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">,</span><span class="s4">'Fare'</span><span class="s3">, </span><span class="s4">'Parch'</span><span class="s3">, </span><span class="s4">'SibSp'</span><span class="s3">, </span><span class="s4">'Pclass'</span><span class="s3">]] </span><span class="s0">#创建临时的 DataFrame tmp_df，包括 'Age'、'Fare'、'Parch'、'SibSp' 和 'Pclass' 列</span>
+<span class="s1">null_age </span><span class="s3">= </span><span class="s1">tmp_df</span><span class="s3">[</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()].</span><span class="s1">values</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">null_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span><span class="s0">#找出 'Age' 列中缺失值的行，并存储在名为 null_age的DataFrame 中</span>
+<span class="s1">predictedAges </span><span class="s3">= </span><span class="s1">rfr</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">X</span><span class="s3">)</span>
+<span class="s1">data_test</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Age' </span><span class="s3">] = </span><span class="s1">predictedAges</span>
+
+<span class="s1">data_test </span><span class="s3">= </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">)</span>
+
+<span class="s0"># 向量化</span>
+<span class="s1">dummies_Cabin </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Cabin'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Cabin'</span><span class="s3">)</span>
+<span class="s1">dummies_Embarked </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Embarked'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Sex'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex'</span><span class="s3">)</span>
+<span class="s1">dummies_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Pclass'</span><span class="s3">)</span>
+<span class="s0">#对类别列 'Cabin'、'Embarked'、'Sex' 和 'Pclass' 执行独热编码</span>
+<span class="s0"># 合成新的数据集</span>
+<span class="s1">df_test </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">concat</span><span class="s3">([</span><span class="s1">data_test</span><span class="s3">, </span><span class="s1">dummies_Cabin</span><span class="s3">, </span><span class="s1">dummies_Embarked</span><span class="s3">, </span><span class="s1">dummies_Sex</span><span class="s3">, </span><span class="s1">dummies_Pclass</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">)  </span><span class="s0">#连接所有的 DataFrame，创建一个名为 df_test 的新 DataFrame</span>
+<span class="s1">df_test</span><span class="s3">.</span><span class="s1">drop</span><span class="s3">([</span><span class="s4">'Pclass'</span><span class="s3">, </span><span class="s4">'Name'</span><span class="s3">, </span><span class="s4">'Sex'</span><span class="s3">, </span><span class="s4">'Ticket'</span><span class="s3">, </span><span class="s4">'Cabin'</span><span class="s3">, </span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">, </span><span class="s1">inplace</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+
+<span class="s0"># 处理浮动值大的数据</span>
+<span class="s1">age_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]])</span><span class="s0">#对 'Age' 和 'Fare' 列执行特征缩放</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">] =</span><span class="s1">age_scale_param</span><span class="s3">.</span><span class="s1">transform</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]])</span>
+<span class="s1">fare_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]])</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">] = </span><span class="s1">fare_scale_param</span><span class="s3">.</span><span class="s1">transform</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]])</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Age'</span><span class="s3">]=</span><span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">]</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Fare'</span><span class="s3">]=</span><span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">]</span><span class="s0">#创建新的 'Age_scaled' 和 'Fare_scaled' 列，并将缩放后的值赋给原始列 'Age' 和 'Fare'</span>
+
+<span class="s0"># 筛选数据(特征)</span>
+<span class="s1">test </span><span class="s3">= </span><span class="s1">df_test</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*'</span><span class="s3">) </span><span class="s0">#使用 filter 方法筛选出符合特定正则表达式的列</span>
+<span class="s1">test </span><span class="s3">= </span><span class="s1">test</span><span class="s3">.</span><span class="s1">values</span>
+<span class="s0"># test</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第9步：结果预测 
+</span><span class="s0">#%% 
+# 筛选数据(特征)</span>
+<span class="s1">predictions </span><span class="s3">= </span><span class="s1">clf</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">test</span><span class="s3">)</span><span class="s0">#机器学习模型 clf 对测试数据 test 进行预测</span>
+<span class="s1">result </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">'PassengerId'</span><span class="s3">:</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'PassengerId'</span><span class="s3">].</span><span class="s1">values</span><span class="s3">, </span><span class="s4">'Survived'</span><span class="s3">:</span><span class="s1">predictions</span><span class="s3">.</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">np</span><span class="s3">.</span><span class="s1">int32</span><span class="s3">)}) </span><span class="s0">#创建一个新的DataFrame称为 result</span>
+<span class="s1">result</span><span class="s3">.</span><span class="s1">to_csv</span><span class="s3">(</span><span class="s4">&quot;reslut_1.csv&quot;</span><span class="s3">, </span><span class="s1">index</span><span class="s3">=</span><span class="s2">False</span><span class="s3">)</span><span class="s0">#使用 Pandas 的 to_csv 方法将结果DataFrame保存为一个名为 reslut_1.csv 的文件</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">第10步：逻辑回归优化 
+</span><span class="s0">#%% 
+# 模型系数关联分析</span>
+<span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">&quot;columns&quot;</span><span class="s3">:</span><span class="s1">list</span><span class="s3">(</span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">columns</span><span class="s3">)[</span><span class="s5">1</span><span class="s3">:], </span><span class="s4">&quot;coef&quot;</span><span class="s3">:</span><span class="s1">list</span><span class="s3">(</span><span class="s1">clf</span><span class="s3">.</span><span class="s1">coef_</span><span class="s3">.</span><span class="s1">T</span><span class="s3">)}) </span><span class="s0"># LR模型系数</span>
+<span class="s0">#%% 
+# 交叉验证</span>
+<span class="s2">from </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">model_selection </span><span class="s2">import </span><span class="s1">cross_val_score</span><span class="s3">, </span><span class="s1">train_test_split</span>
+<span class="s0">#导入了需要的库</span>
+<span class="s0"># 简单看看打分情况</span>
+<span class="s1">clf </span><span class="s3">= </span><span class="s1">linear_model</span><span class="s3">.</span><span class="s1">LogisticRegression</span><span class="s3">(</span><span class="s1">C</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">penalty</span><span class="s3">=</span><span class="s4">'l1'</span><span class="s3">, </span><span class="s1">tol</span><span class="s3">=</span><span class="s5">1e-6</span><span class="s3">, </span><span class="s1">solver</span><span class="s3">=</span><span class="s4">'liblinear'</span><span class="s3">) </span><span class="s0">#使用逻辑回归模型 linear_model.LogisticRegression 创建一个分类器（clf）</span>
+<span class="s1">all_data </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*'</span><span class="s3">)</span>
+<span class="s0">#设置参数，如正则化强度（C）、正则化类型（penalty）、收敛阈值（tol），以及解决方案类型（solver）</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">all_data</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">1</span><span class="s3">:]</span>
+<span class="s1">y </span><span class="s3">= </span><span class="s1">all_data</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">0</span><span class="s3">]</span>
+<span class="s1">cross_val_score </span><span class="s3">= </span><span class="s1">cross_val_score</span><span class="s3">(</span><span class="s1">clf</span><span class="s3">, </span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">, </span><span class="s1">cv</span><span class="s3">=</span><span class="s5">5</span><span class="s3">)</span>
+<span class="s0">#特征数据（X）包括所有数据的第2列及以后的列 目标数据（y）包括所有数据的第1列，即 'Survived' 列</span>
+<span class="s1">cross_val_score</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">特征挖掘 
+</span><span class="s0">#%% 
+# 分割数据</span>
+<span class="s1">split_train</span><span class="s3">, </span><span class="s1">split_cv </span><span class="s3">= </span><span class="s1">train_test_split</span><span class="s3">(</span><span class="s1">df</span><span class="s3">, </span><span class="s1">test_size</span><span class="s3">=</span><span class="s5">0.3</span><span class="s3">, </span><span class="s1">random_state</span><span class="s3">=</span><span class="s5">0</span><span class="s3">)</span>
+<span class="s1">train_df </span><span class="s3">= </span><span class="s1">split_train</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*'</span><span class="s3">)</span>
+<span class="s0">#使用 train_test_split 函数将数据集 df 分为训练集 (split_train) 和交叉验证集 (split_cv)，其中测试集占总数据的 30%</span>
+<span class="s0"># 生成模型</span>
+<span class="s1">clf </span><span class="s3">= </span><span class="s1">linear_model</span><span class="s3">.</span><span class="s1">LogisticRegression</span><span class="s3">(</span><span class="s1">C</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">penalty</span><span class="s3">=</span><span class="s4">'l1'</span><span class="s3">, </span><span class="s1">tol</span><span class="s3">=</span><span class="s5">1e-6</span><span class="s3">, </span><span class="s1">solver</span><span class="s3">=</span><span class="s4">'liblinear'</span><span class="s3">) </span><span class="s0">#创建逻辑回归模型 clf</span>
+<span class="s1">clf</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">1</span><span class="s3">:], </span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">0</span><span class="s3">]) </span><span class="s0">#使用训练集 train_df 中的特征数据（除了 'Survived' 列）来训练模型</span>
+
+<span class="s0"># 对cross validation数据进行预测</span>
+<span class="s1">cv_df </span><span class="s3">= </span><span class="s1">split_cv</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*'</span><span class="s3">)</span>
+<span class="s1">predictions </span><span class="s3">= </span><span class="s1">clf</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">cv_df</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">1</span><span class="s3">:])</span>
+<span class="s1">predictions</span>
+<span class="s0"># split_cv[ predictions != cv_df.values[:,0]].drop()</span>
+<span class="s0"># # 出现这个报错：ValueError: Need to specify at least one of 'labels', 'index' or 'columns'</span>
+
+<span class="s0"># 去除预测错误的case看原始dataframe数据</span>
+<span class="s0"># split_cv['PredictResult'] = predictions</span>
+<span class="s1">origin_data_train </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">&quot;Train.csv&quot;</span><span class="s3">) </span><span class="s0">#使用 Pandas 的 pd.read_csv(&quot;Train.csv&quot;) 从名为 &quot;Train.csv&quot; 的 CSV 文件中读取原始训练数据集</span>
+<span class="s1">bad_cases </span><span class="s3">= </span><span class="s1">origin_data_train</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[</span><span class="s1">origin_data_train</span><span class="s3">[</span><span class="s4">'PassengerId'</span><span class="s3">].</span><span class="s1">isin</span><span class="s3">(</span><span class="s1">split_cv</span><span class="s3">[</span><span class="s1">predictions </span><span class="s3">!= </span><span class="s1">cv_df</span><span class="s3">.</span><span class="s1">values</span><span class="s3">[:,</span><span class="s5">0</span><span class="s3">]][</span><span class="s4">'PassengerId'</span><span class="s3">].</span><span class="s1">values</span><span class="s3">)]</span>
+<span class="s1">bad_cases</span>
+<span class="s0">#通过 split_cv[predictions != cv_df.values[:,0]] 找到在交叉验证集中，模型的预测结果与实际结果不一致的样本</span>
+<span class="s0">#%% 
+</span><span class="s1">data_train</span><span class="s3">[</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Name'</span><span class="s3">].</span><span class="s1">str</span><span class="s3">.</span><span class="s1">contains</span><span class="s3">(</span><span class="s4">&quot;Major&quot;</span><span class="s3">)]</span>
+<span class="s0">#用于从名为 data_train 的DataFrame中筛选出包含 &quot;Major&quot; 的字符串的样本</span>
+
+<span class="s0">#%% 
+# 继续特征挖掘</span>
+<span class="s1">data_train </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">&quot;Train.csv&quot;</span><span class="s3">)</span>
+<span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Sex_Pclass'</span><span class="s3">] = </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Sex </span><span class="s3">+ </span><span class="s4">&quot;_&quot; </span><span class="s3">+ </span><span class="s1">data_train</span><span class="s3">.</span><span class="s1">Pclass</span><span class="s3">.</span><span class="s1">map</span><span class="s3">(</span><span class="s1">str</span><span class="s3">) </span><span class="s0"># 性别_乘客等级合并</span>
+<span class="s1">data_train</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">补全缺失值 
+</span><span class="s0">#%% 
+</span><span class="s2">from </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">ensemble </span><span class="s2">import </span><span class="s1">RandomForestRegressor</span>
+ 
+<span class="s0"># 使用 RandomForestClassifier 填补缺失的年龄属性</span>
+<span class="s2">def </span><span class="s1">set_missing_ages</span><span class="s3">(</span><span class="s1">df</span><span class="s3">):</span>
+    <span class="s0">#用于填充缺失的年龄数据的函数</span>
+    <span class="s0"># 把已有的数值型特征取出来丢进Random Forest Regressor中</span>
+    <span class="s1">age_df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">,</span><span class="s4">'Fare'</span><span class="s3">, </span><span class="s4">'Parch'</span><span class="s3">, </span><span class="s4">'SibSp'</span><span class="s3">, </span><span class="s4">'Pclass'</span><span class="s3">]]</span>
+
+    <span class="s0"># 乘客分成已知年龄和未知年龄两部分</span>
+    <span class="s1">known_age </span><span class="s3">= </span><span class="s1">age_df</span><span class="s3">[</span><span class="s1">age_df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">notnull</span><span class="s3">()].</span><span class="s1">values</span>
+    <span class="s1">unknown_age </span><span class="s3">= </span><span class="s1">age_df</span><span class="s3">[</span><span class="s1">age_df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()].</span><span class="s1">values</span>
+
+    <span class="s0"># y即目标年龄</span>
+    <span class="s1">y </span><span class="s3">= </span><span class="s1">known_age</span><span class="s3">[:, </span><span class="s5">0</span><span class="s3">]</span>
+
+    <span class="s0"># X即特征属性值</span>
+    <span class="s1">X </span><span class="s3">= </span><span class="s1">known_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+
+    <span class="s0"># fit到RandomForestRegressor之中</span>
+    <span class="s1">rfr </span><span class="s3">= </span><span class="s1">RandomForestRegressor</span><span class="s3">(</span><span class="s1">random_state</span><span class="s3">=</span><span class="s5">0</span><span class="s3">, </span><span class="s1">n_estimators</span><span class="s3">=</span><span class="s5">2000</span><span class="s3">, </span><span class="s1">n_jobs</span><span class="s3">=-</span><span class="s5">1</span><span class="s3">)</span>
+    <span class="s1">rfr</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">)</span>
+    
+    <span class="s0"># 用得到的模型进行未知年龄结果预测</span>
+    <span class="s1">predictedAges </span><span class="s3">= </span><span class="s1">rfr</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">unknown_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">::])</span>
+    
+    <span class="s0"># 用得到的预测结果填补原缺失数据</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Age' </span><span class="s3">] = </span><span class="s1">predictedAges </span>
+    
+    <span class="s2">return </span><span class="s1">df</span><span class="s3">, </span><span class="s1">rfr</span>
+
+<span class="s2">def </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">df</span><span class="s3">):</span>
+    <span class="s0">#用于处理舱室类型（'Cabin'）</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">.</span><span class="s1">notnull</span><span class="s3">()), </span><span class="s4">'Cabin' </span><span class="s3">] = </span><span class="s4">&quot;Yes&quot;</span>
+    <span class="s1">df</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">df</span><span class="s3">.</span><span class="s1">Cabin</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Cabin' </span><span class="s3">] = </span><span class="s4">&quot;No&quot;</span>
+    <span class="s0">#将非缺失的 'Cabin' 值标记为 &quot;Yes&quot;，将缺失的 'Cabin' 值标记为 &quot;No&quot;</span>
+    <span class="s0">#将 'Cabin' 特征转换为一个二元特征，表示乘客是否拥有舱室信息</span>
+    <span class="s2">return </span><span class="s1">df</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">特征因子化 
+</span><span class="s0">#%% 
+</span><span class="s1">data_train</span><span class="s3">, </span><span class="s1">rfr </span><span class="s3">= </span><span class="s1">set_missing_ages</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">)</span>
+<span class="s1">data_train </span><span class="s3">= </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">)</span>
+<span class="s0">#使用之前定义的 set_missing_ages 函数，对原始训练数据集 data_train 进行年龄数据的填充</span>
+<span class="s0"># 向量化</span>
+<span class="s1">dummies_Cabin </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Cabin'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Cabin'</span><span class="s3">)</span>
+<span class="s1">dummies_Embarked </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Embarked'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Sex'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex'</span><span class="s3">)</span>
+<span class="s1">dummies_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Pclass'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_train</span><span class="s3">[</span><span class="s4">'Sex_Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex_Pclass'</span><span class="s3">)</span>
+<span class="s0">#创建了多个虚拟变量（dummies）来表示 'Cabin'、'Embarked'、'Sex'、'Pclass' 和 'Sex_Pclass' 这些特征</span>
+<span class="s1">df </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">concat</span><span class="s3">([</span><span class="s1">data_train</span><span class="s3">, </span><span class="s1">dummies_Cabin</span><span class="s3">, </span><span class="s1">dummies_Embarked</span><span class="s3">, </span><span class="s1">dummies_Sex</span><span class="s3">, </span><span class="s1">dummies_Pclass</span><span class="s3">, </span><span class="s1">dummies_Sex_Pclass</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">)</span>
+<span class="s0">#使用 Pandas 的 pd.concat 函数将原始数据集 data_train 和独热编码后的虚拟变量合并成一个新的数据框 df</span>
+<span class="s1">df</span><span class="s3">.</span><span class="s1">drop</span><span class="s3">([</span><span class="s4">'Pclass'</span><span class="s3">, </span><span class="s4">'Name'</span><span class="s3">, </span><span class="s4">'Sex'</span><span class="s3">, </span><span class="s4">'Ticket'</span><span class="s3">, </span><span class="s4">'Cabin'</span><span class="s3">, </span><span class="s4">'Embarked'</span><span class="s3">, </span><span class="s4">'Sex_Pclass'</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">, </span><span class="s1">inplace</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+<span class="s0">#合并时，删除了原始数据集中不再需要的特征，包括 'Pclass'、'Name'、'Sex'、'Ticket'、'Cabin'、'Embarked' 和 'Sex_Pclass' 列</span>
+<span class="s1">df</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">处理浮动较大的数值 
+</span><span class="s0">#%% 
+# 处理数据集中浮动较大的数值到(-1,1)之间</span>
+<span class="s2">import </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">preprocessing </span><span class="s2">as </span><span class="s1">preprocessing</span>
+<span class="s0">#导入了标准化相关的库 sklearn.preprocessing 中的 StandardScaler</span>
+<span class="s1">scaler </span><span class="s3">= </span><span class="s1">preprocessing</span><span class="s3">.</span><span class="s1">StandardScaler</span><span class="s3">()</span>
+
+<span class="s0"># fit的数据需要以2维([[]])的形式传入</span>
+<span class="s1">age_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]])</span>
+<span class="s0">#通过 scaler.fit(df[['Age']]) 对 'Age' 列进行拟合，以获取标准化所需的参数</span>
+<span class="s0"># 将fit的数据处理后的结果以np.array的形式返回</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">] = </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit_transform</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]], </span><span class="s1">age_scale_param</span><span class="s3">)</span>
+<span class="s1">fare_scale_param </span><span class="s3">= </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]])</span>
+<span class="s1">df</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">] = </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit_transform</span><span class="s3">(</span><span class="s1">df</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]], </span><span class="s1">fare_scale_param</span><span class="s3">)</span>
+<span class="s0">#输出带有标准化后的 'Age_scaled' 和 'Fare_scaled' 列的数据集 df</span>
+<span class="s1">df</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">筛选数据 
+</span><span class="s0">#%% 
+# 筛选数据(结果+特征)</span>
+<span class="s0"># 利用正则表达式</span>
+<span class="s1">train_df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*'</span><span class="s3">)</span>
+<span class="s1">train_np </span><span class="s3">= </span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">values</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">数据建模 
+</span><span class="s0">#%% 
+# y即Survival结果</span>
+<span class="s1">y </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">0</span><span class="s3">]</span>
+<span class="s0">#通过 train_np[:, 0] 获取目标变量，即 'Survived' 列，将其存储在名为 y 的变量中</span>
+<span class="s0"># X即特征属性值</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+<span class="s0">#通过 train_np[:, 1:] 获取特征属性值，将其存储在名为 X 的变量中。这包括了除 'Survived' 列之外的所有特征</span>
+
+<span class="s2">from </span><span class="s1">sklearn </span><span class="s2">import </span><span class="s1">linear_model</span>
+<span class="s0"># fit到RandomForestRegressor之中</span>
+<span class="s1">clf </span><span class="s3">= </span><span class="s1">linear_model</span><span class="s3">.</span><span class="s1">LogisticRegression</span><span class="s3">(</span><span class="s1">C</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">penalty</span><span class="s3">=</span><span class="s4">'l1'</span><span class="s3">, </span><span class="s1">tol</span><span class="s3">=</span><span class="s5">1e-6</span><span class="s3">, </span><span class="s1">solver</span><span class="s3">=</span><span class="s4">'liblinear'</span><span class="s3">)</span>
+<span class="s1">clf</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">)</span>
+<span class="s0">#使用 clf.fit(X, y) 对训练数据进行拟合，其中 X 是特征属性值，y 是目标变量（生存结果）</span>
+<span class="s1">clf</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">测试集预处理 
+</span><span class="s0">#%% 
+# 测试集预处理</span>
+<span class="s1">data_test </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">read_csv</span><span class="s3">(</span><span class="s4">&quot;test.csv&quot;</span><span class="s3">)</span>
+
+<span class="s0"># 缺失值处理</span>
+<span class="s1">data_test</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Fare</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Fare' </span><span class="s3">] = </span><span class="s5">0</span>
+<span class="s0">#处理缺失值。如果 'Fare' 列有缺失值，将其填充为0</span>
+<span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Sex_Pclass'</span><span class="s3">] = </span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Sex </span><span class="s3">+ </span><span class="s4">&quot;_&quot; </span><span class="s3">+ </span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Pclass</span><span class="s3">.</span><span class="s1">map</span><span class="s3">(</span><span class="s1">str</span><span class="s3">)</span>
+<span class="s0">#创建一个新的特征 'Sex_Pclass'，将 'Sex' 和 'Pclass' 组合在一起</span>
+<span class="s0"># 对test_data做和train_data中一致的特征变换</span>
+<span class="s0"># 用同样的RandomForestRegressor模型填上丢失的年龄</span>
+<span class="s1">tmp_df </span><span class="s3">= </span><span class="s1">data_test</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">,</span><span class="s4">'Fare'</span><span class="s3">, </span><span class="s4">'Parch'</span><span class="s3">, </span><span class="s4">'SibSp'</span><span class="s3">, </span><span class="s4">'Pclass'</span><span class="s3">]]</span>
+<span class="s1">null_age </span><span class="s3">= </span><span class="s1">tmp_df</span><span class="s3">[</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()].</span><span class="s1">values</span>
+
+<span class="s0"># 根据特征属性X预测年龄并补上</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">null_age</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+<span class="s1">predictedAges </span><span class="s3">= </span><span class="s1">rfr</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">X</span><span class="s3">)</span>
+<span class="s1">data_test</span><span class="s3">.</span><span class="s1">loc</span><span class="s3">[ (</span><span class="s1">data_test</span><span class="s3">.</span><span class="s1">Age</span><span class="s3">.</span><span class="s1">isnull</span><span class="s3">()), </span><span class="s4">'Age' </span><span class="s3">] = </span><span class="s1">predictedAges</span>
+
+<span class="s0"># 向量化</span>
+<span class="s1">data_test </span><span class="s3">= </span><span class="s1">set_Cabin_type</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">)</span>
+<span class="s1">dummies_Cabin </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Cabin'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Cabin'</span><span class="s3">)</span>
+<span class="s1">dummies_Embarked </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Embarked'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Embarked'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Sex'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex'</span><span class="s3">)</span>
+<span class="s1">dummies_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Pclass'</span><span class="s3">)</span>
+<span class="s1">dummies_Sex_Pclass </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">get_dummies</span><span class="s3">(</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'Sex_Pclass'</span><span class="s3">], </span><span class="s1">prefix</span><span class="s3">= </span><span class="s4">'Sex_Pclass'</span><span class="s3">)</span>
+<span class="s0">#对测试数据集中的分类变量进行独热编码，包括 'Cabin'、'Embarked'、'Sex'、'Pclass' 和 'Sex_Pclass' 特征。</span>
+<span class="s0"># 合成新的数据集</span>
+<span class="s1">df_test </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">concat</span><span class="s3">([</span><span class="s1">data_test</span><span class="s3">, </span><span class="s1">dummies_Cabin</span><span class="s3">, </span><span class="s1">dummies_Embarked</span><span class="s3">, </span><span class="s1">dummies_Sex</span><span class="s3">, </span><span class="s1">dummies_Pclass</span><span class="s3">, </span><span class="s1">dummies_Sex_Pclass</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">)</span>
+<span class="s1">df_test</span><span class="s3">.</span><span class="s1">drop</span><span class="s3">([</span><span class="s4">'Pclass'</span><span class="s3">, </span><span class="s4">'Name'</span><span class="s3">, </span><span class="s4">'Sex'</span><span class="s3">, </span><span class="s4">'Ticket'</span><span class="s3">, </span><span class="s4">'Cabin'</span><span class="s3">, </span><span class="s4">'Embarked'</span><span class="s3">, </span><span class="s4">'Sex_Pclass'</span><span class="s3">], </span><span class="s1">axis</span><span class="s3">=</span><span class="s5">1</span><span class="s3">, </span><span class="s1">inplace</span><span class="s3">=</span><span class="s2">True</span><span class="s3">)</span>
+
+<span class="s0"># 处理浮动值大的数据</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Age_scaled'</span><span class="s3">] = </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit_transform</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Age'</span><span class="s3">]], </span><span class="s1">age_scale_param</span><span class="s3">)</span>
+<span class="s1">df_test</span><span class="s3">[</span><span class="s4">'Fare_scaled'</span><span class="s3">] = </span><span class="s1">scaler</span><span class="s3">.</span><span class="s1">fit_transform</span><span class="s3">(</span><span class="s1">df_test</span><span class="s3">[[</span><span class="s4">'Fare'</span><span class="s3">]], </span><span class="s1">fare_scale_param</span><span class="s3">)</span>
+<span class="s0">#使用之前定义的标准化参数 age_scale_param 和 fare_scale_param，对 'Age' 和 'Fare' 列进行标准化</span>
+<span class="s1">df_test</span>
+
+<span class="s0">#%% md 
+</span><span class="s1">结果预测 
+</span><span class="s0">#%% 
+# 筛选数据(特征)</span>
+<span class="s1">test </span><span class="s3">= </span><span class="s1">df_test</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*'</span><span class="s3">)</span>
+<span class="s0">#使用 df_test.filter(regex=...) 筛选测试数据中的特征列，以便用于预测</span>
+<span class="s1">predictions </span><span class="s3">= </span><span class="s1">clf</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">test</span><span class="s3">)</span>
+<span class="s1">result </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">'PassengerId'</span><span class="s3">:</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'PassengerId'</span><span class="s3">].</span><span class="s1">values</span><span class="s3">, </span><span class="s4">'Survived'</span><span class="s3">:</span><span class="s1">predictions</span><span class="s3">.</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">np</span><span class="s3">.</span><span class="s1">int32</span><span class="s3">)})</span>
+<span class="s1">result</span><span class="s3">.</span><span class="s1">to_csv</span><span class="s3">(</span><span class="s4">&quot;result_2.csv&quot;</span><span class="s3">, </span><span class="s1">index</span><span class="s3">=</span><span class="s2">False</span><span class="s3">)</span>
+<span class="s0">#使用 result.to_csv(&quot;result_2.csv&quot;, index=False) 将结果保存为名为 &quot;result_2.csv&quot; 的CSV文件</span>
+<span class="s0">#%% md 
+</span><span class="s1">第11步：模型融合 
+</span><span class="s0">#%% 
+# 导入sklearn中的BaggingRegressor用于构建集成回归模型。</span>
+<span class="s2">from </span><span class="s1">sklearn</span><span class="s3">.</span><span class="s1">ensemble </span><span class="s2">import </span><span class="s1">BaggingRegressor</span>
+
+<span class="s0"># 正则表达式处理</span>
+<span class="s1">train_df </span><span class="s3">= </span><span class="s1">df</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Survived|Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*|Mother|Child|Family|Title'</span><span class="s3">)</span>
+<span class="s1">train_np </span><span class="s3">= </span><span class="s1">train_df</span><span class="s3">.</span><span class="s1">values</span>
+
+<span class="s0"># y即Survival结果</span>
+<span class="s1">y </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">0</span><span class="s3">]</span>
+<span class="s0"># X即特征属性值</span>
+<span class="s1">X </span><span class="s3">= </span><span class="s1">train_np</span><span class="s3">[:, </span><span class="s5">1</span><span class="s3">:]</span>
+<span class="s0">#从筛选后的数据中获取目标变量 y（'Survived' 列）和特征属性 X</span>
+<span class="s0"># fit到BaggingRegressor之中</span>
+<span class="s1">clf </span><span class="s3">= </span><span class="s1">linear_model</span><span class="s3">.</span><span class="s1">LogisticRegression</span><span class="s3">(</span><span class="s1">C</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">penalty</span><span class="s3">=</span><span class="s4">'l1'</span><span class="s3">, </span><span class="s1">tol</span><span class="s3">=</span><span class="s5">1e-6</span><span class="s3">, </span><span class="s1">solver</span><span class="s3">=</span><span class="s4">'liblinear'</span><span class="s3">)</span>
+<span class="s0"># 使用逻辑回归模型 linear_model.LogisticRegression 创建一个基础的回归模型 clf</span>
+<span class="s0"># 根据需要进行调参</span>
+<span class="s1">bagging_clf </span><span class="s3">= </span><span class="s1">BaggingRegressor</span><span class="s3">(</span><span class="s1">clf</span><span class="s3">, </span><span class="s1">n_estimators</span><span class="s3">=</span><span class="s5">20</span><span class="s3">, </span><span class="s1">max_samples</span><span class="s3">=</span><span class="s5">0.8</span><span class="s3">, </span><span class="s1">max_features</span><span class="s3">=</span><span class="s5">1.0</span><span class="s3">, </span><span class="s1">bootstrap</span><span class="s3">=</span><span class="s2">True</span><span class="s3">, </span><span class="s1">bootstrap_features</span><span class="s3">=</span><span class="s2">False</span><span class="s3">, </span><span class="s1">n_jobs</span><span class="s3">=-</span><span class="s5">1</span><span class="s3">)</span>
+<span class="s0">#使用 BaggingRegressor 构建集成回归模型 bagging_clf</span>
+<span class="s1">bagging_clf</span><span class="s3">.</span><span class="s1">fit</span><span class="s3">(</span><span class="s1">X</span><span class="s3">, </span><span class="s1">y</span><span class="s3">)</span>
+
+<span class="s1">test </span><span class="s3">= </span><span class="s1">df_test</span><span class="s3">.</span><span class="s1">filter</span><span class="s3">(</span><span class="s1">regex</span><span class="s3">=</span><span class="s4">'Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass.*|Mother|Child|Family|Title'</span><span class="s3">)</span>
+<span class="s1">predictions </span><span class="s3">= </span><span class="s1">bagging_clf</span><span class="s3">.</span><span class="s1">predict</span><span class="s3">(</span><span class="s1">test</span><span class="s3">)</span>
+<span class="s0">#使用集成模型 bagging_clf 对测试数据进行预测，与之前的逻辑回归模型不同，这里使用了集成模型进行预测</span>
+<span class="s1">result </span><span class="s3">= </span><span class="s1">pd</span><span class="s3">.</span><span class="s1">DataFrame</span><span class="s3">({</span><span class="s4">'PassengerId'</span><span class="s3">:</span><span class="s1">data_test</span><span class="s3">[</span><span class="s4">'PassengerId'</span><span class="s3">].</span><span class="s1">values</span><span class="s3">, </span><span class="s4">'Survived'</span><span class="s3">:</span><span class="s1">predictions</span><span class="s3">.</span><span class="s1">astype</span><span class="s3">(</span><span class="s1">np</span><span class="s3">.</span><span class="s1">int32</span><span class="s3">)})</span>
+<span class="s0">#将预测结果存储在名为 result 的DataFrame中</span>
+<span class="s1">result</span><span class="s3">.</span><span class="s1">to_csv</span><span class="s3">(</span><span class="s4">&quot;result_bagging2.csv&quot;</span><span class="s3">, </span><span class="s1">index</span><span class="s3">=</span><span class="s2">False</span><span class="s3">)</span>
+<span class="s0">#使用 result.to_csv(&quot;result_bagging2.csv&quot;, index=False) 将结果保存为名为 &quot;result_bagging2.csv&quot; 的CSV文件</span></pre>
+</body>
+</html>
